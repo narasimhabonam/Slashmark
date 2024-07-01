@@ -1,0 +1,52 @@
+import numpy as np
+import pandas as pd
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.impute import SimpleImputer
+from xgboost import XGBRegressor
+data = pd.read_csv("train.csv")
+data.head()
+X = data.drop('SalePrice',axis=1)
+y = data['SalePrice']
+
+X.head()
+X.describe()
+X.info()
+X_train_full,X_valid_full,y_train,y_test = train_test_split(X,y,train_size=0.8,test_size=0.2,random_state=0)
+categorical_col=[col for col in X_train_full.columns if X_train_full[col].dtype=='O' and X_train_full[col].nunique()<10]
+print(categorical_col)
+
+numerical_col=[col for col in X_train_full.columns if X_train_full[col].dtype in ['float64','int64']]
+print(numerical_col)
+
+my_cols=categorical_col + numerical_col
+X_train = X_train_full[my_cols].copy()
+X_valid = X_valid_full[my_cols].copy()
+X_train.head()
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+
+numerical_transformer = SimpleImputer(strategy='mean')
+
+categorical_transformer = Pipeline(steps=[
+                                          ('impute',SimpleImputer(strategy='most_frequent')),
+                                          ('onehot',OneHotEncoder(handle_unknown='ignore'))
+])
+
+preprocessor = ColumnTransformer(transformers=[
+                                               ('num',numerical_transformer,numerical_col),
+                                               ('cat',categorical_transformer,categorical_col)
+])
+my_model = XGBRegressor(n_estimators=1000, learning_rate=0.05, n_jobs=4)
+X_train_eval=X_train.copy()
+X_train_eval = eval_set_pipe.fit_transform(X_train)
+pd.DataFrame(X_train_eval,index=X_train.index)
+eval_set_pipe = Pipeline(steps = [('preprocessor', preprocessor)])
+
+# Make a copy to avoid changing original data
+X_valid_eval=X_valid.copy()
+# fit transform X_valid.copy()
+X_valid_eval = eval_set_pipe.transform (X_valid_eval)
+
+pd.DataFrame(X_valid_eval, index=X_valid.index)
